@@ -11,5 +11,8 @@
     "url": "http://github.ua.com/choover/Includer.git"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "split": "^0.3.0"
+  }
 }

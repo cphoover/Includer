@@ -4,27 +4,27 @@ var fs            = require("fs")     ,
 
 var Includer = {};
 
-Includer.createStream = function(_file, _options){
-    if(_file !== typeof "string") throw new TypeError("must provide a string file argument");
-
-    var self           = new Stream.Readable(_options)                                    ;
-    self.viewDirectory = _options.viewDirectory  || __dirname + "/views/"                 ;
-    self.startFile     = _options.startFile      || "index.ejs"                           ;
-    self.includeRegex  = _options.includeRegex   || /^.*<%\s*include\s([^\s]*)\s*%>.*$/gm ;
+Includer.createStream = function(options){
+    options = options || {};
+    var self               = new Stream.Readable(options);
+    self._includeDirectory = options.includeDirectory                  || __dirname + "/../../views/";
+    self._fileExt          = options.fileExt                           || "ejs";
+    self._startFile        = options.startFile                         || "index." + self._fileExt;
+    self._startPath        = self._includeDirectory + self._startFile;
+    self._includeRegex     = options.includeRegex                      || /^.*<%\s*include\s([^\s]*)\s*%>.*$/gm ;
+    self._isRunning        = false;
 
     /** 
-     * CLOSURES WILL EAT YOUR RAM 
-     * HOW WILL THIS WORK AS WE HAVE
-     * MORE NESTED INCLUDES
      * ALSO ERROR HANDLING??!!
+     * CHAR ENCODINGS?
      **/
     function getIncludes(_f, _cb) {
         var s = fs.createReadStream(_f).pipe(split());
         s.on("data", function (_l) {
             var m;
-            if(m = includeRegex.exec(_l)) {
+            if(m = self._includeRegex.exec(_l)) {
                 s.pause();
-                getIncludes(viewDirectory + m[1] + ".ejs", function () {
+                getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
                     s.resume();
                 });
             } else self.push(_l + "\n");
@@ -33,8 +33,14 @@ Includer.createStream = function(_file, _options){
             "function" === typeof _cb && _cb();
         });
     }
-    getIncludes(startPath);
+
+    self._read = function(){
+        if(self._isRunning) return false;
+        self._isRunning = true;
+        getIncludes(self._startPath); // stream should be returned before we start
+    }
     return self;
 };
+
 
 module.exports = Includer;
