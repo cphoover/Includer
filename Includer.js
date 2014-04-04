@@ -27,7 +27,7 @@ Includer.createStream = function(options){
                 getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
                     s.resume();
                 });
-            } else self.push(_l + "\n");
+            } else self.push( _l + "\n");
         });
         s.on("end", function () {
             "function" === typeof _cb && _cb();
@@ -37,7 +37,9 @@ Includer.createStream = function(options){
     self._read = function(){
         if(self._isRunning) return false;
         self._isRunning = true;
-        getIncludes(self._startPath); // stream should be returned before we start
+        getIncludes(self._startPath, function(){
+            self.emit('end');
+        }); // stream should be returned before we start
     }
     return self;
 };
