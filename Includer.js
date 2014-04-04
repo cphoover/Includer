@@ -7,6 +7,7 @@ var Includer = {};
 Includer.createStream = function(options){
     options = options || {};
     var self               = new Stream.Readable(options);
+    self._encoding         = options.encoding                          || "utf8";
     self._includeDirectory = options.includeDirectory                  || __dirname + "/../../views/";
     self._fileExt          = options.fileExt                           || "ejs";
     self._startFile        = options.startFile                         || "index." + self._fileExt;
@@ -18,7 +19,10 @@ Includer.createStream = function(options){
      * ALSO ERROR HANDLING??!!
      **/
     function getIncludes(_f, _cb) {
-        var s = fs.createReadStream(_f).pipe(split());
+        var s = fs.createReadStream(_f, { encoding: self._encoding }).pipe(split());
+        s.on("error", function(_err){
+            self.emit("error", _err);
+        });
         s.on("data", function (_l) {
             var m;
             if(m = self._includeRegex.exec(_l)) {
@@ -26,7 +30,9 @@ Includer.createStream = function(options){
                 getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
                     s.resume();
                 });                             
-            } else self.push(_l.length ? _l + "\n" : _l);
+            } else {
+                self.push(_l.length ? _l + "\n" : _l);
+            }
         });
         s.on("end", function () {
             "function" === typeof _cb && _cb();
