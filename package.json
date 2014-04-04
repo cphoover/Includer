@@ -4,7 +4,7 @@
   "description": "",
   "main": "Includer.js",
   "scripts": {
-    "test": "node tests/MainTest.js"
+    "test": "node tests/TestRunner.js"
   },
   "repository": {
     "type": "git",
