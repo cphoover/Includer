@@ -16,7 +16,6 @@ Includer.createStream = function(options){
 
     /** 
      * ALSO ERROR HANDLING??!!
-     * CHAR ENCODINGS?
      **/
     function getIncludes(_f, _cb) {
         var s = fs.createReadStream(_f).pipe(split());
@@ -26,8 +25,8 @@ Includer.createStream = function(options){
                 s.pause();
                 getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
                     s.resume();
-                });
-            } else self.push( _l + "\n");
+                });                             
+            } else self.push(_l.length ? _l + "\n" : _l);
         });
         s.on("end", function () {
             "function" === typeof _cb && _cb();
