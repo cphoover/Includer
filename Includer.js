@@ -2,7 +2,7 @@
 var fs            = require("fs")     ,
     split         = require("split")  ,
     Stream        = require("stream") , 
-    util          = require("util")
+    util          = require("util")   ;
 
 var Includer = {};
 
@@ -16,6 +16,7 @@ function IncluderStream(_options){
     this._startPath        = this._includeDirectory + this._startFile;
     this._includeRegex     = _options.includeRegex                      || /^.*<%\s*include\s([^\s]*)\s*%>.*$/gm ;
     this._isRunning        = false;
+    this._firstRun         = true;
 
     this.currentStream = null;
     this.streamStack   = [];
@@ -38,7 +39,8 @@ IncluderStream.prototype.getIncludes = function(_f, _cb) {
                 self.streamStack.pop().resume();
             });                             
         } else {
-            self.push(_l.length ? _l + "\n" : _l);
+            self.push(_l.length ? (self._firstRun ? "" : "\n" ) + _l : _l);
+            self._firstRun = false;
         }
     });
     self.currentStream.on("end", function () {
