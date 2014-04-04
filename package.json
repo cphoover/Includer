@@ -4,11 +4,11 @@
   "description": "",
   "main": "Includer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/MainTest.js"
   },
   "repository": {
     "type": "git",
-    "url": "http://github.ua.com/choover/Includer.git"
+    "url": "https://github.com/cphoover/Includer"
   },
   "author": "",
   "license": "ISC",
