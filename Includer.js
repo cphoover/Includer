@@ -1,52 +1,63 @@
+"use strict"; 
 var fs            = require("fs")     ,
     split         = require("split")  ,
-    Stream        = require("stream");
+    Stream        = require("stream") , 
+    util          = require("util")
 
 var Includer = {};
 
+function IncluderStream(_options){
+
+    Stream.Readable.apply(this, arguments);
+
+    this._includeDirectory = _options.includeDirectory                  || __dirname + "/../../views/";
+    this._fileExt          = _options.fileExt                           || "ejs";
+    this._startFile        = _options.startFile                         || "index." + this._fileExt;
+    this._startPath        = this._includeDirectory + this._startFile;
+    this._includeRegex     = _options.includeRegex                      || /^.*<%\s*include\s([^\s]*)\s*%>.*$/gm ;
+    this._isRunning        = false;
+
+    this.currentStream = null;
+    this.streamStack   = [];
+}
+
+util.inherits(IncluderStream, Stream.Readable);
+
+IncluderStream.prototype.getIncludes = function(_f, _cb) {
+    var self = this;
+    self.currentStream = fs.createReadStream(_f, { encoding: self._readableState.encoding }).pipe(split());
+    self.currentStream.on("error", function(_err){
+        self.currentStream.emit("error", _err);
+    });
+    self.currentStream.on("data", function (_l) {
+        var m;
+        if(m = self._includeRegex.exec(_l)) {
+            self.streamStack.push(self.currentStream);
+            self.currentStream.pause();
+            self.getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
+                self.streamStack.pop().resume();
+            });                             
+        } else {
+            self.push(_l.length ? _l + "\n" : _l);
+        }
+    });
+    self.currentStream.on("end", function () {
+        "function" === typeof _cb && _cb();
+    });
+};
+
+IncluderStream.prototype._read = function(){
+    var self = this;
+    if(self._isRunning) return false;
+    self._isRunning = true;
+    self.getIncludes(self._startPath, function(){
+        self.emit('end');
+    }); // stream should be returned before we start
+}
+
+
 Includer.createStream = function(options){
-    options = options || {};
-    var self               = new Stream.Readable(options);
-    self._encoding         = options.encoding                          || "utf8";
-    self._includeDirectory = options.includeDirectory                  || __dirname + "/../../views/";
-    self._fileExt          = options.fileExt                           || "ejs";
-    self._startFile        = options.startFile                         || "index." + self._fileExt;
-    self._startPath        = self._includeDirectory + self._startFile;
-    self._includeRegex     = options.includeRegex                      || /^.*<%\s*include\s([^\s]*)\s*%>.*$/gm ;
-    self._isRunning        = false;
-
-    /** 
-     * ALSO ERROR HANDLING??!!
-     **/
-    function getIncludes(_f, _cb) {
-        var s = fs.createReadStream(_f, { encoding: self._encoding }).pipe(split());
-        s.on("error", function(_err){
-            self.emit("error", _err);
-        });
-        s.on("data", function (_l) {
-            var m;
-            if(m = self._includeRegex.exec(_l)) {
-                s.pause();
-                getIncludes(self._includeDirectory + m[1] + "." + self._fileExt, function () {
-                    s.resume();
-                });                             
-            } else {
-                self.push(_l.length ? _l + "\n" : _l);
-            }
-        });
-        s.on("end", function () {
-            "function" === typeof _cb && _cb();
-        });
-    }
-
-    self._read = function(){
-        if(self._isRunning) return false;
-        self._isRunning = true;
-        getIncludes(self._startPath, function(){
-            self.emit('end');
-        }); // stream should be returned before we start
-    }
-    return self;
+     return new IncluderStream(options);
 };
 
 
