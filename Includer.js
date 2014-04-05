@@ -21,7 +21,7 @@ function IncluderStream(_options){
 
     this.currentStream     = null;
     this.streamStack   = [];
-    this.fileStack     = [];
+
 }
 
 util.inherits(IncluderStream, Stream.Readable);
