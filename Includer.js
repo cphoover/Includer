@@ -1,9 +1,9 @@
 "use strict"; 
-var fs            = require("fs")     ,
-    split         = require("split")  ,
-    Stream        = require("stream") , 
-    util          = require("util")   ,
-    path          = require("path")   ;
+var fs     = require("fs")     ,
+    split  = require("split")  ,
+    Stream = require("stream") , 
+    util   = require("util")   ,
+    path   = require("path")   ;
 
 var Includer = {};
 
@@ -31,8 +31,6 @@ IncluderStream.prototype.getIncludes = function(_f, _cb) {
     
     self.currentStream = fs.createReadStream(_f, { encoding: self._readableState.encoding }).pipe(split());
 
-
-
     self.currentStream.on("error", function(_err){
         self.currentStream.emit("error", _err);
     });
@@ -45,7 +43,9 @@ IncluderStream.prototype.getIncludes = function(_f, _cb) {
                 stream : self.currentStream,
                 file   : _f
             });
+            
             self.currentStream.pause();
+            
             var basename = m[1] + "." + self._fileExt;
             self._currentFile = ( 
                 m[1].indexOf("/") === 0 ?
